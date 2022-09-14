@@ -1,10 +1,10 @@
 import styles from '../styles/Home.module.css'
-import React, { FC, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import { Connection, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
-import { WalletNotConnectedError } from '@solana/wallet-adapter-base';
+import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
+import { getUserSOLBalance, transfer } from '../utils/helpers';
 
-const destAddress = new PublicKey('EJ5BiUhi6ifQpZmYBupx839xF1YKvZmj6yq9At3PecEh')
+const destAddress = new PublicKey('2oaH7AKTzzT2LrXKhAzqeXFPvSTpj2hrksXXGg5dSXFz')
 const transferAmount = 0.1 * LAMPORTS_PER_SOL;
 
 
@@ -13,43 +13,9 @@ const HomeView = () => {
     const { connection } = useConnection();
     const [balance, setBalance] = useState(0)
 
-    const getUserSOLBalance =  async (publicKey: PublicKey, connection: Connection) => {
-        try {
-          const balanceInLamports = await connection.getBalance(
-            publicKey,
-            'confirmed'
-          );
-          setBalance(balanceInLamports / LAMPORTS_PER_SOL);
-        } catch (e) {
-          console.log(`error getting balance: `, e);
-        }
-    }
-
-    const transfer = async (from: PublicKey | null, to: PublicKey, amount: number) => {
-        if (!from) throw new WalletNotConnectedError();
-
-        const transaction = new Transaction().add(
-          SystemProgram.transfer({
-            fromPubkey: from,
-            toPubkey: to,
-            lamports: amount,
-          })
-        );
-
-        const {
-            context: { slot: minContextSlot },
-            value: { blockhash, lastValidBlockHeight }
-        } = await connection.getLatestBlockhashAndContext();
-    
-        const signature = await wallet.sendTransaction(transaction, connection, { minContextSlot });
-
-        await connection.confirmTransaction({ blockhash, lastValidBlockHeight, signature });
-        console.log('balance after transfer: ', balance)
-      }
-
     useEffect(()=>{
         if (wallet.publicKey){
-            getUserSOLBalance(wallet.publicKey, connection);
+            getUserSOLBalance(wallet.publicKey, connection).then(walletBalance => setBalance(walletBalance));
         }
     },[wallet, connection])
 
@@ -59,7 +25,7 @@ const HomeView = () => {
                 SOL Balance : {balance} 
             </h1>
             <button
-                onClick={() => transfer(wallet.publicKey, destAddress, transferAmount)}
+                onClick={() => transfer(wallet, connection, destAddress, transferAmount)}
             >
                 <span>Transfer</span>
             </button>
