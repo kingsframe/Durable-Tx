@@ -49,33 +49,8 @@ const HomeView = () => {
         await connection.confirmTransaction({ blockhash, lastValidBlockHeight, signature });
         console.log('nonce account initialized: ', signature)
         return nonceAccount
-
-        // let tx = new Transaction().add(
-        //     // create nonce account
-        //     SystemProgram.createAccount({
-        //       fromPubkey: wallet.publicKey,
-        //       newAccountPubkey: nonceAccount.publicKey,
-        //       lamports: await connection.getMinimumBalanceForRentExemption(
-        //         NONCE_ACCOUNT_LENGTH
-        //       ),
-        //       space: NONCE_ACCOUNT_LENGTH,
-        //       programId: SystemProgram.programId,
-        //     }),
-        //     // init nonce account
-        //     SystemProgram.nonceInitialize({
-        //       noncePubkey: nonceAccount.publicKey, // nonce account pubkey
-        //       authorizedPubkey: wallet.publicKey, // nonce account authority (for advance and close)
-        //     })
-        // );
-
-        // const signature = await wallet.sendTransaction(tx, connection,  {  signers: [nonceAccount] })
-        // console.log('nonce account initialized: ', signature)
-
-        // const nonceAccountRentFreeBalance = await connection.getMinimumBalanceForRentExemption(NonceAccountSize)
-        
+        // const signature = await wallet.sendTransaction(tx, connection,  {  signers: [nonceAccount] }) 
         // const latestBlockhash = await connection.getLatestBlockhash();
-        // console.log('before sending tx')
-
         // const transaction = new Transaction({...latestBlockhash, feePayer: wallet.publicKey}).add(
         //     SystemProgram.createNonceAccount({
         //         authorizedPubkey: wallet.publicKey,
@@ -88,16 +63,10 @@ const HomeView = () => {
         //         authorizedPubkey: wallet.publicKey
         //      })
         // );
-
         // transaction.partialSign(nonceAccount)
         // const a = String.fromCharCode.apply(null, transaction.serialize({requireAllSignatures: false}) as any)
         // console.log("~~~~", btoa(a) )
-
         // const signature = await wallet.sendTransaction(transaction, connection, {  signers: [nonceAccount], skipPreflight: true });
-        // console.log('after sending tx: ', signature)
-        // // await connection.confirmTransaction({ blockhash, lastValidBlockHeight, signature });
-        // console.log("transaction confirmed")
-        // return nonceAccount
     }
 
     const createDurableTx = async (wallet: WalletContextState, connection: Connection, to: PublicKey, amount: number) => {
@@ -140,14 +109,21 @@ const HomeView = () => {
 
         setDurableTx(tx);
         console.log('durable tx buffer: ', Buffer.from(JSON.stringify(tx)));
-        setDurableTxBuffer(Buffer.from(JSON.stringify(tx)));
+        setDurableTxBuffer(tx.serialize());
     }
 
-    const sendRawTx = async (connection: Connection, durableTx: Transaction | null | undefined) => {
+    const sendRawTx = async (connection: Connection, durableTx: Buffer | null | undefined) => {
         if (!durableTx) throw new Error("no Durable Tx");
        
-        const signature =  await connection.sendRawTransaction(durableTx.serialize())
+        const signature =  await connection.sendRawTransaction(durableTx)
         console.log('Raw transaction sent: ', signature)
+
+        const {
+            context: { slot: minContextSlot },
+            value: { blockhash, lastValidBlockHeight }
+        } = await connection.getLatestBlockhashAndContext();
+        await connection.confirmTransaction({ blockhash, lastValidBlockHeight, signature });
+        console.log("transaction confirmed")
     }
 
     return (
@@ -168,7 +144,7 @@ const HomeView = () => {
             <p>{durableTx ? JSON.stringify(durableTx): 'No Tx yet'}</p>
             
             <button
-                onClick={() => sendRawTx(connection, durableTx)}
+                onClick={() => sendRawTx(connection, durableTxBuffer)}
             >
                 <span>Send the raw durable tx</span>
             </button>      
