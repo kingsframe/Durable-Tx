@@ -101,7 +101,7 @@ const HomeView = () => {
     }
 
     const createDurableTx = async (wallet: WalletContextState, connection: Connection, to: PublicKey, amount: number) => {
-        if (!wallet.publicKey) throw new WalletNotConnectedError();
+        if (!wallet || !wallet.publicKey) throw new WalletNotConnectedError();
 
         const nonceAccountKeypair  = await createAndInitializeNonceAccount(wallet, connection);
 
@@ -135,24 +135,12 @@ const HomeView = () => {
         tx.sign(
             nonceAccountKeypair
         ); /* fee payer + nonce account authority + ... */
+        
+        tx  = await wallet.signTransaction!(tx);
 
         setDurableTx(tx);
         console.log('durable tx buffer: ', Buffer.from(JSON.stringify(tx)));
         setDurableTxBuffer(Buffer.from(JSON.stringify(tx)));
-
-        // const na = await connection.getNonce();
-        // na.
-        // const transaction = new Transaction({nonceInfo: {
-        //     nonce: ...,
-        //     nonceInstruction: SystemProgram.nonceAdvance({noncePubkey: nonceAccount.publicKey, authorizedPubkey: wallet.publicKey}),
-        // }}).add(
-            
-        //     SystemProgram.transfer({
-        //         fromPubkey: wallet.publicKey,
-        //         toPubkey: to,
-        //         lamports: amount,
-        //       })
-        //   );
     }
 
     const sendRawTx = async (connection: Connection, durableTx: Transaction | null | undefined) => {
