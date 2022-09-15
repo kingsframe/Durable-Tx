@@ -13,6 +13,7 @@ const HomeView = () => {
     const { connection } = useConnection();
     const [balance, setBalance] = useState(0)
     const [durableTx, setDurableTx] = useState<Transaction | null>()
+    const [durableTxBuffer, setDurableTxBuffer] = useState<Buffer | null>()
 
     useEffect(()=>{
         if (wallet.publicKey){
@@ -137,6 +138,7 @@ const HomeView = () => {
 
         setDurableTx(tx);
         console.log('durable tx buffer: ', Buffer.from(JSON.stringify(tx)));
+        setDurableTxBuffer(Buffer.from(JSON.stringify(tx)));
 
         // const na = await connection.getNonce();
         // na.
@@ -151,6 +153,13 @@ const HomeView = () => {
         //         lamports: amount,
         //       })
         //   );
+    }
+
+    const sendRawTx = async (connection: Connection, durableTx: Transaction | null | undefined) => {
+        if (!durableTx) throw new Error("no Durable Tx");
+       
+        const signature =  await connection.sendRawTransaction(durableTx.serialize())
+        console.log('Raw transaction sent: ', signature)
     }
 
     return (
@@ -169,6 +178,12 @@ const HomeView = () => {
                 <span>Create a durable tx</span>
             </button>
             <p>{durableTx ? JSON.stringify(durableTx): 'No Tx yet'}</p>
+            
+            <button
+                onClick={() => sendRawTx(connection, durableTx)}
+            >
+                <span>Send the raw durable tx</span>
+            </button>      
         </main>
     )
 }
