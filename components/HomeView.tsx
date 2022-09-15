@@ -39,7 +39,13 @@ const HomeView = () => {
              })
         );
 
-        const signature = await wallet.sendTransaction(tx, connection,  {  signers: [nonceAccount] })
+        const {
+            context: { slot: minContextSlot },
+            value: { blockhash, lastValidBlockHeight }
+        } = await connection.getLatestBlockhashAndContext();
+
+        const signature = await wallet.sendTransaction(tx, connection, { signers: [nonceAccount] })
+        await connection.confirmTransaction({ blockhash, lastValidBlockHeight, signature });
         console.log('nonce account initialized: ', signature)
         return nonceAccount
 
@@ -97,6 +103,7 @@ const HomeView = () => {
         if (!wallet.publicKey) throw new WalletNotConnectedError();
 
         const nonceAccountKeypair  = await createAndInitializeNonceAccount(wallet, connection);
+
         const accountInfo = await connection.getAccountInfo(nonceAccountKeypair.publicKey);
         console.log('accountInfo: ', accountInfo)
         const nonceAccount = accountInfo && NonceAccount.fromAccountData(accountInfo.data);
