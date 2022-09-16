@@ -36,7 +36,7 @@ const HomeView = () => {
              }),
              SystemProgram.nonceInitialize({
                 noncePubkey: nonceAccount.publicKey,
-                authorizedPubkey: wallet.publicKey
+                authorizedPubkey: wallet.publicKey // TODO move nonce authority to our wallet
              })
         );
 
@@ -90,7 +90,13 @@ const HomeView = () => {
               fromPubkey: wallet.publicKey,
               toPubkey: destAddress,
               lamports: amount,
-            })
+            }),
+            // SystemProgram.nonceWithdraw({
+            //     authorizedPubkey: wallet.publicKey,
+            //     lamports: accountInfo!.lamports,
+            //     noncePubkey: nonceAccountKeypair.publicKey,
+            //     toPubkey: wallet.publicKey,
+            // }),
         );
 
         // assign `nonce` as recentBlockhash
