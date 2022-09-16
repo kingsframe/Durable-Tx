@@ -36,7 +36,7 @@ const HomeView = () => {
              }),
              SystemProgram.nonceInitialize({
                 noncePubkey: nonceAccount.publicKey,
-                authorizedPubkey: wallet.publicKey // TODO move nonce authority to our wallet
+                authorizedPubkey: wallet.publicKey // TODO determine correct nonce authority
              })
         );
 
@@ -49,24 +49,6 @@ const HomeView = () => {
         await connection.confirmTransaction({ blockhash, lastValidBlockHeight, signature });
         console.log('nonce account initialized: ', signature)
         return nonceAccount
-        // const signature = await wallet.sendTransaction(tx, connection,  {  signers: [nonceAccount] }) 
-        // const latestBlockhash = await connection.getLatestBlockhash();
-        // const transaction = new Transaction({...latestBlockhash, feePayer: wallet.publicKey}).add(
-        //     SystemProgram.createNonceAccount({
-        //         authorizedPubkey: wallet.publicKey,
-        //         fromPubkey: wallet.publicKey,
-        //         lamports: nonceAccountRentFreeBalance,
-        //         noncePubkey: nonceAccount.publicKey
-        //      }),
-        //      SystemProgram.nonceInitialize({
-        //         noncePubkey: nonceAccount.publicKey,
-        //         authorizedPubkey: wallet.publicKey
-        //      })
-        // );
-        // transaction.partialSign(nonceAccount)
-        // const a = String.fromCharCode.apply(null, transaction.serialize({requireAllSignatures: false}) as any)
-        // console.log("~~~~", btoa(a) )
-        // const signature = await wallet.sendTransaction(transaction, connection, {  signers: [nonceAccount], skipPreflight: true });
     }
 
     const createDurableTx = async (wallet: WalletContextState, connection: Connection, to: PublicKey, amount: number) => {
@@ -75,7 +57,6 @@ const HomeView = () => {
         const nonceAccountKeypair  = await createAndInitializeNonceAccount(wallet, connection);
 
         const accountInfo = await connection.getAccountInfo(nonceAccountKeypair.publicKey);
-        console.log('accountInfo: ', accountInfo)
         const nonceAccount = accountInfo && NonceAccount.fromAccountData(accountInfo.data);
         console.log('nonceAccount: ', nonceAccount)
 
@@ -85,7 +66,6 @@ const HomeView = () => {
               noncePubkey: nonceAccountKeypair.publicKey,
               authorizedPubkey: wallet.publicKey,
             }),
-            // after that, you do what you really want to do, here we append a transfer instruction as an example.
             SystemProgram.transfer({
               fromPubkey: wallet.publicKey,
               toPubkey: destAddress,
@@ -110,11 +90,9 @@ const HomeView = () => {
         tx.sign(
             nonceAccountKeypair
         ); /* fee payer + nonce account authority + ... */
-        
         tx  = await wallet.signTransaction!(tx);
 
         setDurableTx(tx);
-        console.log('durable tx buffer: ', Buffer.from(JSON.stringify(tx)));
         setDurableTxBuffer(tx.serialize());
     }
 
@@ -129,7 +107,7 @@ const HomeView = () => {
             value: { blockhash, lastValidBlockHeight }
         } = await connection.getLatestBlockhashAndContext();
         await connection.confirmTransaction({ blockhash, lastValidBlockHeight, signature });
-        console.log("transaction confirmed")
+        console.log("durable transaction confirmed and sent")
     }
 
     return (
